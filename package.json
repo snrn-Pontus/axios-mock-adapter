@@ -1,6 +1,6 @@
 {
   "name": "axios-mock-adapter-path-params",
-  "version": "1.19.0",
+  "version": "1.19.2",
   "description": "Axios adapter that allows to easily mock requests",
   "main": "src/index.js",
   "scripts": {
