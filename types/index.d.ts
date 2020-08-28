@@ -1,5 +1,7 @@
 import { AxiosAdapter, AxiosInstance, AxiosRequestConfig } from 'axios';
 
+
+
 type CallbackResponseSpecFunc = (
   config: AxiosRequestConfig
 ) => any[] | Promise<any[]>;
@@ -27,10 +29,6 @@ interface MockAdapterOptions {
   onNoMatch?: 'passthrough';
 }
 
-interface AsymmetricMatcher {
-  asymmetricMatch: Function;
-}
-
 interface RequestDataMatcher {
   [index: string]: any;
   params?: {
@@ -41,19 +39,18 @@ interface RequestDataMatcher {
 interface HeadersMatcher {
   [header: string]: string;
 }
-
-type AsymmetricHeadersMatcher = AsymmetricMatcher | HeadersMatcher;
-
-type AsymmetricRequestDataMatcher = AsymmetricMatcher | RequestDataMatcher;
+interface RouteParams {
+  [param: string]: string;
+}
 
 type RequestMatcherFunc = (
   matcher?: string | RegExp,
-  body?: string | AsymmetricRequestDataMatcher,
-  headers?: AsymmetricHeadersMatcher
+  body?: string | RequestDataMatcher,
+  headers?: HeadersMatcher
 ) => RequestHandler;
 
 declare class MockAdapter {
-  constructor(axiosInstance: AxiosInstance, options?: MockAdapterOptions);
+  constructor(axiosInstance: AxiosInstance, options?: MockAdapterOptions, routeParams?:RouteParams);
 
   adapter(): AxiosAdapter;
   reset(): void;

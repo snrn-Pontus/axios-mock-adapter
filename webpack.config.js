@@ -6,7 +6,7 @@ var config = {
   externals: {
     axios: "axios",
   },
-  plugins: [],
+  plugins: []
 };
 
 module.exports = config;

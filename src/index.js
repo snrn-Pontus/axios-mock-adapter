@@ -1,17 +1,17 @@
-"use strict";
+'use strict';
 
-var handleRequest = require("./handle_request");
-var utils = require("./utils");
+var handleRequest = require('./handle_request');
+var utils = require('./utils');
 
 var VERBS = [
-  "get",
-  "post",
-  "head",
-  "delete",
-  "patch",
-  "put",
-  "options",
-  "list",
+  'get',
+  'post',
+  'head',
+  'delete',
+  'patch',
+  'put',
+  'options',
+  'list'
 ];
 
 function adapter() {
@@ -49,16 +49,16 @@ function resetHistory() {
   this.history = getVerbObject();
 }
 
-function MockAdapter(axiosInstance, options) {
+function MockAdapter(axiosInstance, options, knownRouteParams) {
   reset.call(this);
 
   // TODO throw error instead when no axios instance is provided
   if (axiosInstance) {
     this.axiosInstance = axiosInstance;
     this.originalAdapter = axiosInstance.defaults.adapter;
-    this.delayResponse =
-      options && options.delayResponse > 0 ? options.delayResponse : null;
+    this.delayResponse = options && options.delayResponse > 0 ? options.delayResponse : null;
     this.onNoMatch = (options && options.onNoMatch) || null;
+    this.knownRouteParams = getValidRouteParams(knownRouteParams);
     axiosInstance.defaults.adapter = this.adapter.call(this);
   }
 }
@@ -76,14 +76,15 @@ MockAdapter.prototype.reset = reset;
 MockAdapter.prototype.resetHandlers = resetHandlers;
 MockAdapter.prototype.resetHistory = resetHistory;
 
-VERBS.concat("any").forEach(function (method) {
-  var methodName = "on" + method.charAt(0).toUpperCase() + method.slice(1);
-  MockAdapter.prototype[methodName] = function (matcher, body, requestHeaders) {
+VERBS.concat('any').forEach(function (method) {
+  var methodName = 'on' + method.charAt(0).toUpperCase() + method.slice(1);
+  MockAdapter.prototype[methodName] = function (incMatcher, body, requestHeaders) {
     var _this = this;
-    var matcher = matcher === undefined ? /.*/ : matcher;
+    var originalMatcher = incMatcher;
+    var matcher = getMatcher(incMatcher, _this.knownRouteParams);
 
     function reply(code, response, headers) {
-      var handler = [matcher, body, requestHeaders, code, response, headers];
+      var handler = [matcher, body, requestHeaders, code, response, headers, originalMatcher];
       addHandler(method, _this.handlers, handler);
       return _this;
     }
@@ -96,7 +97,8 @@ VERBS.concat("any").forEach(function (method) {
         code,
         response,
         headers,
-        true,
+        originalMatcher,
+        true
       ];
       addHandler(method, _this.handlers, handler);
       return _this;
@@ -116,10 +118,10 @@ VERBS.concat("any").forEach(function (method) {
       abortRequest: function () {
         return reply(function (config) {
           var error = utils.createAxiosError(
-            "Request aborted",
+            'Request aborted',
             config,
             undefined,
-            "ECONNABORTED"
+            'ECONNABORTED'
           );
           return Promise.reject(error);
         });
@@ -128,10 +130,10 @@ VERBS.concat("any").forEach(function (method) {
       abortRequestOnce: function () {
         return replyOnce(function (config) {
           var error = utils.createAxiosError(
-            "Request aborted",
+            'Request aborted',
             config,
             undefined,
-            "ECONNABORTED"
+            'ECONNABORTED'
           );
           return Promise.reject(error);
         });
@@ -139,14 +141,14 @@ VERBS.concat("any").forEach(function (method) {
 
       networkError: function () {
         return reply(function (config) {
-          var error = utils.createAxiosError("Network Error", config);
+          var error = utils.createAxiosError('Network Error', config);
           return Promise.reject(error);
         });
       },
 
       networkErrorOnce: function () {
         return replyOnce(function (config) {
-          var error = utils.createAxiosError("Network Error", config);
+          var error = utils.createAxiosError('Network Error', config);
           return Promise.reject(error);
         });
       },
@@ -154,11 +156,11 @@ VERBS.concat("any").forEach(function (method) {
       timeout: function () {
         return reply(function (config) {
           var error = utils.createAxiosError(
-            config.timeoutErrorMessage ||
-              "timeout of " + config.timeout + "ms exceeded",
+            config.timeoutErrorMessage
+            || 'timeout of ' + config.timeout + 'ms exceeded',
             config,
             undefined,
-            "ECONNABORTED"
+            'ECONNABORTED'
           );
           return Promise.reject(error);
         });
@@ -167,15 +169,15 @@ VERBS.concat("any").forEach(function (method) {
       timeoutOnce: function () {
         return replyOnce(function (config) {
           var error = utils.createAxiosError(
-            config.timeoutErrorMessage ||
-              "timeout of " + config.timeout + "ms exceeded",
+            config.timeoutErrorMessage
+            || 'timeout of ' + config.timeout + 'ms exceeded',
             config,
             undefined,
-            "ECONNABORTED"
+            'ECONNABORTED'
           );
           return Promise.reject(error);
         });
-      },
+      }
     };
   };
 });
@@ -184,15 +186,13 @@ function findInHandlers(method, handlers, handler) {
   var index = -1;
   for (var i = 0; i < handlers[method].length; i += 1) {
     var item = handlers[method][i];
-    var isReplyOnce = item.length === 7;
-    var comparePaths =
-      item[0] instanceof RegExp && handler[0] instanceof RegExp
-        ? String(item[0]) === String(handler[0])
-        : item[0] === handler[0];
-    var isSame =
-      comparePaths &&
-      utils.isEqual(item[1], handler[1]) &&
-      utils.isEqual(item[2], handler[2]);
+    var isReplyOnce = item.length === 8;
+    var comparePaths = item[0] instanceof RegExp && handler[0] instanceof RegExp
+      ? String(item[0]) === String(handler[0])
+      : item[0] === handler[0];
+    var isSame = comparePaths
+      && utils.isEqual(item[1], handler[1])
+      && utils.isEqual(item[2], handler[2]);
     if (isSame && !isReplyOnce) {
       index = i;
     }
@@ -201,18 +201,52 @@ function findInHandlers(method, handlers, handler) {
 }
 
 function addHandler(method, handlers, handler) {
-  if (method === "any") {
+  if (method === 'any') {
     VERBS.forEach(function (verb) {
       handlers[verb].push(handler);
     });
   } else {
     var indexOfExistingHandler = findInHandlers(method, handlers, handler);
-    if (indexOfExistingHandler > -1 && handler.length < 7) {
+    if (indexOfExistingHandler > -1 && handler.length < 8) {
       handlers[method].splice(indexOfExistingHandler, 1, handler);
     } else {
       handlers[method].push(handler);
     }
   }
+}
+
+function getValidRouteParams(knownRouteParams) {
+  if (typeof knownRouteParams !== 'object') {
+    return null;
+  }
+
+  var valid = {};
+  var hasValidParams = false;
+
+  Object.keys(knownRouteParams).forEach(function (param) {
+    if (/^:(.+)|{(.+)}$/.test(param)) {
+      valid[param] = knownRouteParams[param];
+      hasValidParams = true;
+    }
+  });
+
+  return hasValidParams ? valid : null;
+}
+
+function getMatcher(incMatcher, knownRouteParams) {
+  var matcher = incMatcher;
+  if (matcher === undefined) {
+    return /.*/;
+  }
+
+  if (typeof matcher === 'string' && knownRouteParams !== null) {
+    Object.keys(knownRouteParams).forEach(function (param) {
+      matcher = matcher.replace(param, '(' + knownRouteParams[param] + ')');
+    });
+    return new RegExp('^' + matcher + '$');
+  }
+
+  return matcher;
 }
 
 module.exports = MockAdapter;

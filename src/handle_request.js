@@ -1,12 +1,12 @@
-"use strict";
+'use strict';
 
-var utils = require("./utils");
+var utils = require('./utils');
 
 function transformRequest(data) {
   if (
-    utils.isArrayBuffer(data) ||
-    utils.isBuffer(data) ||
-    utils.isStream(data)
+    utils.isArrayBuffer(data)
+    || utils.isBuffer(data)
+    || utils.isStream(data)
   ) {
     return data;
   }
@@ -27,19 +27,19 @@ function makeResponse(result, config) {
     headers: result[2],
     config: config,
     request: {
-      responseUrl: config.url,
-    },
+      responseUrl: config.url
+    }
   };
 }
 
 function handleRequest(mockAdapter, resolve, reject, config) {
-  var url = config.url || "";
+  var url = config.url;
   // TODO we're not hitting this `if` in any of the tests, investigate
   if (
-    config.baseURL &&
-    url.substr(0, config.baseURL.length) === config.baseURL
+    config.baseURL
+    && config.url.substr(0, config.baseURL.length) === config.baseURL
   ) {
-    url = url.slice(config.baseURL.length);
+    url = config.url.slice(config.baseURL.length);
   }
 
   delete config.adapter;
@@ -56,14 +56,16 @@ function handleRequest(mockAdapter, resolve, reject, config) {
   );
 
   if (handler) {
-    if (handler.length === 7) {
+    if (handler.length === 8) {
       utils.purgeIfReplyOnce(mockAdapter, handler);
     }
+
+    config.routeParams = utils.getRouteParams(mockAdapter.knownRouteParams, handler[6], config);
 
     if (handler.length === 2) {
       // passThrough handler
       mockAdapter.originalAdapter(config).then(resolve, reject);
-    } else if (typeof handler[3] !== "function") {
+    } else if (typeof handler[3] !== 'function') {
       utils.settle(
         resolve,
         reject,
@@ -73,7 +75,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
     } else {
       var result = handler[3](config);
       // TODO throw a sane exception when return value is incorrect
-      if (typeof result.then !== "function") {
+      if (typeof result.then !== 'function') {
         utils.settle(
           resolve,
           reject,
@@ -117,18 +119,16 @@ function handleRequest(mockAdapter, resolve, reject, config) {
   } else {
     // handler not found
     switch (mockAdapter.onNoMatch) {
-      case "passthrough":
+      case 'passthrough':
         mockAdapter.originalAdapter(config).then(resolve, reject);
         break;
-      case "throwException":
-        throw utils.createCouldNotFindMockError(config);
       default:
         utils.settle(
           resolve,
           reject,
           {
             status: 404,
-            config: config,
+            config: config
           },
           mockAdapter.delayResponse
         );

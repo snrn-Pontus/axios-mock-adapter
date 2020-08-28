@@ -1,4 +1,8 @@
 {
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module"
+  },
   "rules": {
     "brace-style": [2, "1tbs", { "allowSingleLine": false }],
     "comma-dangle": [2, "only-multiline"],
