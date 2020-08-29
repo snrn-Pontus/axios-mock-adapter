@@ -1,5 +1,6 @@
 import handleRequest from "./handle_request";
-import utils from "./utils";
+import { createAxiosError } from "./utils";
+import isEqual from "fast-deep-equal";
 
 const VERBS = [
   "get",
@@ -12,188 +13,188 @@ const VERBS = [
   "list",
 ];
 
-function adapter() {
-  return function (config) {
-    const mockAdapter = this;
-    // axios >= 0.13.0 only passes the config and expects a promise to be
-    // returned. axios < 0.13.0 passes (config, resolve, reject).
-    if (arguments.length === 3) {
-      handleRequest(mockAdapter, arguments[0], arguments[1], arguments[2]);
-    } else {
-      return new Promise(function (resolve, reject) {
-        handleRequest(mockAdapter, resolve, reject, config);
-      });
+export default class MockAdapter {
+  constructor(axiosInstance, options, knownRouteParams) {
+    reset.call(this);
+
+    // TODO throw error instead when no axios instance is provided
+    if (axiosInstance) {
+      this.axiosInstance = axiosInstance;
+      this.originalAdapter = axiosInstance.defaults.adapter;
+      this.delayResponse =
+        options && options.delayResponse > 0 ? options.delayResponse : null;
+      this.onNoMatch = (options && options.onNoMatch) || null;
+      this.knownRouteParams = getValidRouteParams(knownRouteParams);
+      axiosInstance.defaults.adapter = this.adapter.call(this);
     }
-  }.bind(this);
+
+    this.restore = function restore() {
+      if (this.axiosInstance) {
+        this.axiosInstance.defaults.adapter = this.originalAdapter;
+        this.axiosInstance = undefined;
+      }
+    };
+
+    this.reset = reset;
+    this.resetHandlers = resetHandlers;
+    this.resetHistory = resetHistory;
+
+    VERBS.concat("any").forEach(function (method) {
+      const methodName =
+        "on" + method.charAt(0).toUpperCase() + method.slice(1);
+      MockAdapter.prototype[methodName] = function (
+        incMatcher,
+        body,
+        requestHeaders
+      ) {
+        const _this = this;
+        const originalMatcher = incMatcher;
+        const matcher = getMatcher(incMatcher, _this.knownRouteParams);
+
+        function reply(code, response, headers) {
+          const handler = [
+            matcher,
+            body,
+            requestHeaders,
+            code,
+            response,
+            headers,
+            originalMatcher,
+          ];
+          addHandler(method, _this.handlers, handler);
+          return _this;
+        }
+
+        function replyOnce(code, response, headers) {
+          const handler = [
+            matcher,
+            body,
+            requestHeaders,
+            code,
+            response,
+            headers,
+            originalMatcher,
+            true,
+          ];
+          addHandler(method, _this.handlers, handler);
+          return _this;
+        }
+
+        return {
+          reply: reply,
+
+          replyOnce: replyOnce,
+
+          passThrough: function passThrough() {
+            const handler = [matcher, body];
+            addHandler(method, _this.handlers, handler);
+            return _this;
+          },
+
+          abortRequest: function () {
+            return reply(function (config) {
+              const error = createAxiosError(
+                "Request aborted",
+                config,
+                undefined,
+                "ECONNABORTED"
+              );
+              return Promise.reject(error);
+            });
+          },
+
+          abortRequestOnce: function () {
+            return replyOnce(function (config) {
+              const error = createAxiosError(
+                "Request aborted",
+                config,
+                undefined,
+                "ECONNABORTED"
+              );
+              return Promise.reject(error);
+            });
+          },
+
+          networkError: function () {
+            return reply(function (config) {
+              const error = createAxiosError("Network Error", config);
+              return Promise.reject(error);
+            });
+          },
+
+          networkErrorOnce: function () {
+            return replyOnce(function (config) {
+              const error = createAxiosError("Network Error", config);
+              return Promise.reject(error);
+            });
+          },
+
+          timeout: function () {
+            return reply(function (config) {
+              const error = createAxiosError(
+                config.timeoutErrorMessage ||
+                  "timeout of " + config.timeout + "ms exceeded",
+                config,
+                undefined,
+                "ECONNABORTED"
+              );
+              return Promise.reject(error);
+            });
+          },
+
+          timeoutOnce: function () {
+            return replyOnce(function (config) {
+              const error = createAxiosError(
+                config.timeoutErrorMessage ||
+                  "timeout of " + config.timeout + "ms exceeded",
+                config,
+                undefined,
+                "ECONNABORTED"
+              );
+              return Promise.reject(error);
+            });
+          },
+        };
+      };
+    });
+  }
+  adapter() {
+    return function (config) {
+      const mockAdapter = this;
+      // axios >= 0.13.0 only passes the config and expects a promise to be
+      // returned. axios < 0.13.0 passes (config, resolve, reject).
+      if (arguments.length === 3) {
+        handleRequest(mockAdapter, arguments[0], arguments[1], arguments[2]);
+      } else {
+        return new Promise(function (resolve, reject) {
+          handleRequest(mockAdapter, resolve, reject, config);
+        });
+      }
+    }.bind(this);
+  }
 }
 
-function getVerbObject() {
+export function getVerbObject() {
   return VERBS.reduce(function (accumulator, verb) {
     accumulator[verb] = [];
     return accumulator;
   }, {});
 }
 
-function reset() {
+export function reset() {
   resetHandlers.call(this);
   resetHistory.call(this);
 }
 
-function resetHandlers() {
+export function resetHandlers() {
   this.handlers = getVerbObject();
 }
 
-function resetHistory() {
+export function resetHistory() {
   this.history = getVerbObject();
 }
 
-function MockAdapter(axiosInstance, options, knownRouteParams) {
-  reset.call(this);
-
-  // TODO throw error instead when no axios instance is provided
-  if (axiosInstance) {
-    this.axiosInstance = axiosInstance;
-    this.originalAdapter = axiosInstance.defaults.adapter;
-    this.delayResponse =
-      options && options.delayResponse > 0 ? options.delayResponse : null;
-    this.onNoMatch = (options && options.onNoMatch) || null;
-    this.knownRouteParams = getValidRouteParams(knownRouteParams);
-    axiosInstance.defaults.adapter = this.adapter.call(this);
-  }
-}
-
-MockAdapter.prototype.adapter = adapter;
-
-MockAdapter.prototype.restore = function restore() {
-  if (this.axiosInstance) {
-    this.axiosInstance.defaults.adapter = this.originalAdapter;
-    this.axiosInstance = undefined;
-  }
-};
-
-MockAdapter.prototype.reset = reset;
-MockAdapter.prototype.resetHandlers = resetHandlers;
-MockAdapter.prototype.resetHistory = resetHistory;
-
-VERBS.concat("any").forEach(function (method) {
-  const methodName = "on" + method.charAt(0).toUpperCase() + method.slice(1);
-  MockAdapter.prototype[methodName] = function (
-    incMatcher,
-    body,
-    requestHeaders
-  ) {
-    const _this = this;
-    const originalMatcher = incMatcher;
-    const matcher = getMatcher(incMatcher, _this.knownRouteParams);
-
-    function reply(code, response, headers) {
-      const handler = [
-        matcher,
-        body,
-        requestHeaders,
-        code,
-        response,
-        headers,
-        originalMatcher,
-      ];
-      addHandler(method, _this.handlers, handler);
-      return _this;
-    }
-
-    function replyOnce(code, response, headers) {
-      const handler = [
-        matcher,
-        body,
-        requestHeaders,
-        code,
-        response,
-        headers,
-        originalMatcher,
-        true,
-      ];
-      addHandler(method, _this.handlers, handler);
-      return _this;
-    }
-
-    return {
-      reply: reply,
-
-      replyOnce: replyOnce,
-
-      passThrough: function passThrough() {
-        const handler = [matcher, body];
-        addHandler(method, _this.handlers, handler);
-        return _this;
-      },
-
-      abortRequest: function () {
-        return reply(function (config) {
-          const error = utils.createAxiosError(
-            "Request aborted",
-            config,
-            undefined,
-            "ECONNABORTED"
-          );
-          return Promise.reject(error);
-        });
-      },
-
-      abortRequestOnce: function () {
-        return replyOnce(function (config) {
-          const error = utils.createAxiosError(
-            "Request aborted",
-            config,
-            undefined,
-            "ECONNABORTED"
-          );
-          return Promise.reject(error);
-        });
-      },
-
-      networkError: function () {
-        return reply(function (config) {
-          const error = utils.createAxiosError("Network Error", config);
-          return Promise.reject(error);
-        });
-      },
-
-      networkErrorOnce: function () {
-        return replyOnce(function (config) {
-          const error = utils.createAxiosError("Network Error", config);
-          return Promise.reject(error);
-        });
-      },
-
-      timeout: function () {
-        return reply(function (config) {
-          const error = utils.createAxiosError(
-            config.timeoutErrorMessage ||
-              "timeout of " + config.timeout + "ms exceeded",
-            config,
-            undefined,
-            "ECONNABORTED"
-          );
-          return Promise.reject(error);
-        });
-      },
-
-      timeoutOnce: function () {
-        return replyOnce(function (config) {
-          const error = utils.createAxiosError(
-            config.timeoutErrorMessage ||
-              "timeout of " + config.timeout + "ms exceeded",
-            config,
-            undefined,
-            "ECONNABORTED"
-          );
-          return Promise.reject(error);
-        });
-      },
-    };
-  };
-});
-
-function findInHandlers(method, handlers, handler) {
+export function findInHandlers(method, handlers, handler) {
   let index = -1;
   for (let i = 0; i < handlers[method].length; i += 1) {
     const item = handlers[method][i];
@@ -204,8 +205,8 @@ function findInHandlers(method, handlers, handler) {
         : item[0] === handler[0];
     const isSame =
       comparePaths &&
-      utils.isEqual(item[1], handler[1]) &&
-      utils.isEqual(item[2], handler[2]);
+      isEqual(item[1], handler[1]) &&
+      isEqual(item[2], handler[2]);
     if (isSame && !isReplyOnce) {
       index = i;
     }
@@ -213,7 +214,7 @@ function findInHandlers(method, handlers, handler) {
   return index;
 }
 
-function addHandler(method, handlers, handler) {
+export function addHandler(method, handlers, handler) {
   if (method === "any") {
     VERBS.forEach(function (verb) {
       handlers[verb].push(handler);
@@ -228,7 +229,7 @@ function addHandler(method, handlers, handler) {
   }
 }
 
-function getValidRouteParams(knownRouteParams) {
+export function getValidRouteParams(knownRouteParams) {
   if (typeof knownRouteParams !== "object") {
     return null;
   }
@@ -246,7 +247,7 @@ function getValidRouteParams(knownRouteParams) {
   return hasValidParams ? valid : null;
 }
 
-function getMatcher(incMatcher, knownRouteParams) {
+export function getMatcher(incMatcher, knownRouteParams) {
   let matcher = incMatcher;
   if (matcher === undefined) {
     return /.*/;
@@ -261,6 +262,3 @@ function getMatcher(incMatcher, knownRouteParams) {
 
   return matcher;
 }
-
-module.exports = MockAdapter;
-module.exports.default = MockAdapter;

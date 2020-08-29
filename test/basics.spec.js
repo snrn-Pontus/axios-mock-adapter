@@ -1,8 +1,7 @@
-var axios = require("axios");
-var fs = require("fs");
-var expect = require("chai").expect;
-
-var MockAdapter = require("../src");
+import axios from "axios";
+import MockAdapter from "../src";
+import { expect } from "chai";
+import fs from "fs";
 
 describe("MockAdapter basics", function () {
   var instance;

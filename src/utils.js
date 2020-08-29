@@ -1,13 +1,12 @@
 import axios from "axios";
 import isEqual from "fast-deep-equal";
-import isBuffer from "is-buffer";
 
 const toString = Object.prototype.toString;
 
 // < 0.13.0 will not have default headers set on a custom instance
 const rejectWithError = !!axios.create().defaults.headers;
 
-function find(array, predicate) {
+export function find(array, predicate) {
   const length = array.length;
   for (let i = 0; i < length; i++) {
     const value = array[i];
@@ -15,23 +14,23 @@ function find(array, predicate) {
   }
 }
 
-function isFunction(val) {
+export function isFunction(val) {
   return toString.call(val) === "[object Function]";
 }
 
-function isObjectOrArray(val) {
+export function isObjectOrArray(val) {
   return val !== null && typeof val === "object";
 }
 
-function isStream(val) {
+export function isStream(val) {
   return isObjectOrArray(val) && isFunction(val.pipe);
 }
 
-function isArrayBuffer(val) {
+export function isArrayBuffer(val) {
   return toString.call(val) === "[object ArrayBuffer]";
 }
 
-function combineUrls(baseURL, url) {
+export function combineUrls(baseURL, url) {
   if (baseURL) {
     return baseURL.replace(/\/+$/, "") + "/" + url.replace(/^\/+/, "");
   }
@@ -39,7 +38,7 @@ function combineUrls(baseURL, url) {
   return url;
 }
 
-function findHandler(
+export function findHandler(
   handlers,
   method,
   url,
@@ -48,7 +47,7 @@ function findHandler(
   headers,
   baseURL
 ) {
-  return find(handlers[method.toLowerCase()], function (handler) {
+  return handlers[method.toLowerCase()].find(function (handler) {
     if (typeof handler[0] === "string") {
       return (
         (isUrlMatching(url, handler[0]) ||
@@ -67,13 +66,13 @@ function findHandler(
   });
 }
 
-function isUrlMatching(url, required) {
+export function isUrlMatching(url, required) {
   const noSlashUrl = url[0] === "/" ? url.substr(1) : url;
   const noSlashRequired = required[0] === "/" ? required.substr(1) : required;
   return noSlashUrl === noSlashRequired;
 }
 
-function isBodyOrParametersMatching(method, body, parameters, required) {
+export function isBodyOrParametersMatching(method, body, parameters, required) {
   const allowedParamsMethods = ["delete", "get", "head", "options"];
   if (allowedParamsMethods.indexOf(method.toLowerCase()) >= 0) {
     const params = required ? required.params : undefined;
@@ -82,7 +81,7 @@ function isBodyOrParametersMatching(method, body, parameters, required) {
   return isBodyMatching(body, required);
 }
 
-function isObjectMatching(actual, expected) {
+export function isObjectMatching(actual, expected) {
   if (expected === undefined) return true;
   if (typeof expected.asymmetricMatch === "function") {
     return expected.asymmetricMatch(actual);
@@ -90,7 +89,7 @@ function isObjectMatching(actual, expected) {
   return isEqual(actual, expected);
 }
 
-function isBodyMatching(body, requiredBody) {
+export function isBodyMatching(body, requiredBody) {
   if (requiredBody === undefined) {
     return true;
   }
@@ -102,7 +101,7 @@ function isBodyMatching(body, requiredBody) {
   return isObjectMatching(parsedBody || body, requiredBody);
 }
 
-function purgeIfReplyOnce(mock, handler) {
+export function purgeIfReplyOnce(mock, handler) {
   Object.keys(mock.handlers).forEach(function (key) {
     const index = mock.handlers[key].indexOf(handler);
     if (index > -1) {
@@ -111,7 +110,7 @@ function purgeIfReplyOnce(mock, handler) {
   });
 }
 
-function settle(resolve, reject, response, delay) {
+export function settle(resolve, reject, response, delay) {
   if (delay > 0) {
     setTimeout(function () {
       settle(resolve, reject, response);
@@ -140,10 +139,7 @@ function settle(resolve, reject, response, delay) {
   }
 }
 
-function createAxiosError(message, config, response, code) {
-  // Support for axios < 0.13.0
-  if (!rejectWithError) return response;
-
+export function createAxiosError(message, config, response, code) {
   const error = new Error(message);
   error.isAxiosError = true;
   error.config = config;
@@ -156,7 +152,7 @@ function createAxiosError(message, config, response, code) {
   return error;
 }
 
-function getRouteParams(knownRouteParams, routePattern, config) {
+export function getRouteParams(knownRouteParams, routePattern, config) {
   const routeParams = {};
   let route = routePattern;
 
@@ -190,17 +186,3 @@ function getRouteParams(knownRouteParams, routePattern, config) {
 
   return routeParams;
 }
-
-module.exports = {
-  find: find,
-  findHandler: findHandler,
-  purgeIfReplyOnce: purgeIfReplyOnce,
-  settle: settle,
-  isStream: isStream,
-  isArrayBuffer: isArrayBuffer,
-  isObjectOrArray: isObjectOrArray,
-  isBuffer: isBuffer,
-  isEqual: isEqual,
-  createAxiosError: createAxiosError,
-  getRouteParams: getRouteParams,
-};

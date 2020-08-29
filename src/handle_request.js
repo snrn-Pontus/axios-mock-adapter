@@ -1,16 +1,21 @@
-import utils from "./utils";
+import {
+  findHandler,
+  getRouteParams,
+  isArrayBuffer,
+  isObjectOrArray,
+  isStream,
+  purgeIfReplyOnce,
+  settle,
+} from "./utils";
+import isBuffer from "is-buffer";
 
-function transformRequest(data) {
-  if (
-    utils.isArrayBuffer(data) ||
-    utils.isBuffer(data) ||
-    utils.isStream(data)
-  ) {
+export function transformRequest(data) {
+  if (isArrayBuffer(data) || isBuffer(data) || isStream(data)) {
     return data;
   }
 
   // Object and Array: returns a deep copy
-  if (utils.isObjectOrArray(data)) {
+  if (isObjectOrArray(data)) {
     return JSON.parse(JSON.stringify(data));
   }
 
@@ -18,7 +23,7 @@ function transformRequest(data) {
   return data;
 }
 
-function makeResponse(result, config) {
+export function makeResponse(result, config) {
   return {
     status: result[0],
     data: transformRequest(result[1]),
@@ -30,7 +35,7 @@ function makeResponse(result, config) {
   };
 }
 
-function handleRequest(mockAdapter, resolve, reject, config) {
+export default function handleRequest(mockAdapter, resolve, reject, config) {
   let url = config.url;
   // TODO we're not hitting this `if` in any of the tests, investigate
   if (
@@ -43,7 +48,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
   delete config.adapter;
   mockAdapter.history[config.method].push(config);
 
-  const handler = utils.findHandler(
+  const handler = findHandler(
     mockAdapter.handlers,
     config.method,
     url,
@@ -55,10 +60,10 @@ function handleRequest(mockAdapter, resolve, reject, config) {
 
   if (handler) {
     if (handler.length === 8) {
-      utils.purgeIfReplyOnce(mockAdapter, handler);
+      purgeIfReplyOnce(mockAdapter, handler);
     }
 
-    config.routeParams = utils.getRouteParams(
+    config.routeParams = getRouteParams(
       mockAdapter.knownRouteParams,
       handler[6],
       config
@@ -68,7 +73,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
       // passThrough handler
       mockAdapter.originalAdapter(config).then(resolve, reject);
     } else if (typeof handler[3] !== "function") {
-      utils.settle(
+      settle(
         resolve,
         reject,
         makeResponse(handler.slice(3), config),
@@ -78,7 +83,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
       const result = handler[3](config);
       // TODO throw a sane exception when return value is incorrect
       if (typeof result.then !== "function") {
-        utils.settle(
+        settle(
           resolve,
           reject,
           makeResponse(result, config),
@@ -88,7 +93,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
         result.then(
           function (result) {
             if (result.config && result.status) {
-              utils.settle(
+              settle(
                 resolve,
                 reject,
                 makeResponse(
@@ -98,7 +103,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
                 0
               );
             } else {
-              utils.settle(
+              settle(
                 resolve,
                 reject,
                 makeResponse(result, config),
@@ -125,7 +130,7 @@ function handleRequest(mockAdapter, resolve, reject, config) {
         mockAdapter.originalAdapter(config).then(resolve, reject);
         break;
       default:
-        utils.settle(
+        settle(
           resolve,
           reject,
           {
@@ -137,5 +142,3 @@ function handleRequest(mockAdapter, resolve, reject, config) {
     }
   }
 }
-
-module.exports = handleRequest;

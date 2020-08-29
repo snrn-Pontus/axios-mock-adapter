@@ -1,7 +1,6 @@
-var expect = require("chai").expect;
-var find = require("../src/utils").find;
-var isEqual = require("../src/utils").isEqual;
-var isObjectOrArray = require("../src/utils").isObjectOrArray;
+import { expect } from "chai";
+import { find, isObjectOrArray } from "../src/utils";
+import isEqual from "fast-deep-equal";
 
 describe("utility functions", function () {
   context("find", function () {

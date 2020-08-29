@@ -1,8 +1,6 @@
-var axios = require("axios");
-var expect = require("chai").expect;
-
-var MockAdapter = require("../src");
-var CancelToken = axios.CancelToken;
+import axios, { CancelToken } from "axios";
+import MockAdapter from "../src";
+import { expect } from "chai";
 
 describe("MockAdapter basics", function () {
   var instance;

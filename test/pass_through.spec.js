@@ -1,8 +1,8 @@
-var axios = require("axios");
-var expect = require("chai").expect;
-var createServer = require("http").createServer;
+import axios from "axios";
+import MockAdapter from "../src";
+import { expect } from "chai";
 
-var MockAdapter = require("../src");
+import { createServer } from "http";
 
 describe("passThrough tests (requires Node)", function () {
   var instance;

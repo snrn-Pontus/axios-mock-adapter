@@ -1,3 +1,6 @@
+const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
+  .BundleAnalyzerPlugin;
+
 var config = {
   output: {
     library: "AxiosMockAdapter",
@@ -6,7 +9,7 @@ var config = {
   externals: {
     axios: "axios",
   },
-  plugins: [],
+  // plugins: [new BundleAnalyzerPlugin()],
 };
 
 module.exports = config;

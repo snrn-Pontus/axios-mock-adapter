@@ -1,8 +1,7 @@
-var axios = require("axios");
-var expect = require("chai").expect;
-var createServer = require("http").createServer;
-
-var MockAdapter = require("../src");
+import axios from "axios";
+import MockAdapter from "../src";
+import { expect } from "chai";
+import { createServer } from "http";
 
 describe("trailing slash in axios baseUrl issue (requires Node)", function () {
   var instance;
