@@ -1,25 +1,26 @@
-var axios = require('axios');
-var isEqual = require('fast-deep-equal');
-var isBuffer = require('is-buffer');
-var toString = Object.prototype.toString;
+import axios from "axios";
+import isEqual from "fast-deep-equal";
+import isBuffer from "is-buffer";
+
+const toString = Object.prototype.toString;
 
 // < 0.13.0 will not have default headers set on a custom instance
-var rejectWithError = !!axios.create().defaults.headers;
+const rejectWithError = !!axios.create().defaults.headers;
 
 function find(array, predicate) {
-  var length = array.length;
-  for (var i = 0; i < length; i++) {
-    var value = array[i];
+  const length = array.length;
+  for (let i = 0; i < length; i++) {
+    const value = array[i];
     if (predicate(value)) return value;
   }
 }
 
 function isFunction(val) {
-  return toString.call(val) === '[object Function]';
+  return toString.call(val) === "[object Function]";
 }
 
 function isObjectOrArray(val) {
-  return val !== null && typeof val === 'object';
+  return val !== null && typeof val === "object";
 }
 
 function isStream(val) {
@@ -27,12 +28,12 @@ function isStream(val) {
 }
 
 function isArrayBuffer(val) {
-  return toString.call(val) === '[object ArrayBuffer]';
+  return toString.call(val) === "[object ArrayBuffer]";
 }
 
 function combineUrls(baseURL, url) {
   if (baseURL) {
-    return baseURL.replace(/\/+$/, '') + '/' + url.replace(/^\/+/, '');
+    return baseURL.replace(/\/+$/, "") + "/" + url.replace(/^\/+/, "");
   }
 
   return url;
@@ -48,33 +49,34 @@ function findHandler(
   baseURL
 ) {
   return find(handlers[method.toLowerCase()], function (handler) {
-    if (typeof handler[0] === 'string') {
+    if (typeof handler[0] === "string") {
       return (
-        (isUrlMatching(url, handler[0])
-          || isUrlMatching(combineUrls(baseURL, url), handler[0]))
-        && isBodyOrParametersMatching(method, body, parameters, handler[1])
-        && isObjectMatching(headers, handler[2])
+        (isUrlMatching(url, handler[0]) ||
+          isUrlMatching(combineUrls(baseURL, url), handler[0])) &&
+        isBodyOrParametersMatching(method, body, parameters, handler[1]) &&
+        isObjectMatching(headers, handler[2])
       );
-    } if (handler[0] instanceof RegExp) {
+    }
+    if (handler[0] instanceof RegExp) {
       return (
-        (handler[0].test(url) || handler[0].test(combineUrls(baseURL, url)))
-        && isBodyOrParametersMatching(method, body, parameters, handler[1])
-        && isObjectMatching(headers, handler[2])
+        (handler[0].test(url) || handler[0].test(combineUrls(baseURL, url))) &&
+        isBodyOrParametersMatching(method, body, parameters, handler[1]) &&
+        isObjectMatching(headers, handler[2])
       );
     }
   });
 }
 
 function isUrlMatching(url, required) {
-  var noSlashUrl = url[0] === '/' ? url.substr(1) : url;
-  var noSlashRequired = required[0] === '/' ? required.substr(1) : required;
+  const noSlashUrl = url[0] === "/" ? url.substr(1) : url;
+  const noSlashRequired = required[0] === "/" ? required.substr(1) : required;
   return noSlashUrl === noSlashRequired;
 }
 
 function isBodyOrParametersMatching(method, body, parameters, required) {
-  var allowedParamsMethods = ['delete', 'get', 'head', 'options'];
+  const allowedParamsMethods = ["delete", "get", "head", "options"];
   if (allowedParamsMethods.indexOf(method.toLowerCase()) >= 0) {
-    var params = required ? required.params : undefined;
+    const params = required ? required.params : undefined;
     return isObjectMatching(parameters, params);
   }
   return isBodyMatching(body, required);
@@ -82,7 +84,7 @@ function isBodyOrParametersMatching(method, body, parameters, required) {
 
 function isObjectMatching(actual, expected) {
   if (expected === undefined) return true;
-  if (typeof expected.asymmetricMatch === 'function') {
+  if (typeof expected.asymmetricMatch === "function") {
     return expected.asymmetricMatch(actual);
   }
   return isEqual(actual, expected);
@@ -92,7 +94,7 @@ function isBodyMatching(body, requiredBody) {
   if (requiredBody === undefined) {
     return true;
   }
-  var parsedBody;
+  let parsedBody;
   try {
     parsedBody = JSON.parse(body);
   } catch (e) {}
@@ -102,7 +104,7 @@ function isBodyMatching(body, requiredBody) {
 
 function purgeIfReplyOnce(mock, handler) {
   Object.keys(mock.handlers).forEach(function (key) {
-    var index = mock.handlers[key].indexOf(handler);
+    const index = mock.handlers[key].indexOf(handler);
     if (index > -1) {
       mock.handlers[key].splice(index, 1);
     }
@@ -121,12 +123,12 @@ function settle(resolve, reject, response, delay) {
     response.config.validateStatus(response.status)
       ? resolve(response)
       : reject(
-        createAxiosError(
-          'Request failed with status code ' + response.status,
-          response.config,
-          response
-        )
-      );
+          createAxiosError(
+            "Request failed with status code " + response.status,
+            response.config,
+            response
+          )
+        );
     return;
   }
 
@@ -142,7 +144,7 @@ function createAxiosError(message, config, response, code) {
   // Support for axios < 0.13.0
   if (!rejectWithError) return response;
 
-  var error = new Error(message);
+  const error = new Error(message);
   error.isAxiosError = true;
   error.config = config;
   if (response !== undefined) {
@@ -155,30 +157,30 @@ function createAxiosError(message, config, response, code) {
 }
 
 function getRouteParams(knownRouteParams, routePattern, config) {
-  var routeParams = {};
-  var route = routePattern;
+  const routeParams = {};
+  let route = routePattern;
 
-  if (knownRouteParams === null || typeof route !== 'string') {
+  if (knownRouteParams === null || typeof route !== "string") {
     return routeParams;
   }
 
-  var paramsUsedInRoute = route.split('/').filter(function (param) {
+  const paramsUsedInRoute = route.split("/").filter(function (param) {
     return knownRouteParams[param] !== undefined;
   });
   if (paramsUsedInRoute.length === 0) {
     return routeParams;
   }
 
-  paramsUsedInRoute.forEach(function (param) {
-    route = route.replace(param, '(' + knownRouteParams[param] + ')');
+  paramsUsedInRoute.forEach((param) => {
+    route = route.replace(param, "(" + knownRouteParams[param] + ")");
   });
 
-  var actualUrl = config.url;
-  var routeMatches = actualUrl.match(new RegExp('^' + route + '$'));
+  const actualUrl = config.url;
+  const routeMatches = actualUrl.match(new RegExp("^" + route + "$"));
 
   paramsUsedInRoute.forEach(function (param, index) {
-    var paramNameMatches = param.match(/^:(.+)|{(.+)}$/) || [];
-    var paramName = paramNameMatches[1] || paramNameMatches[2];
+    const paramNameMatches = param.match(/^:(.+)|{(.+)}$/) || [];
+    const paramName = paramNameMatches[1] || paramNameMatches[2];
     if (paramName === undefined) {
       return;
     }
@@ -200,5 +202,5 @@ module.exports = {
   isBuffer: isBuffer,
   isEqual: isEqual,
   createAxiosError: createAxiosError,
-  getRouteParams: getRouteParams
+  getRouteParams: getRouteParams,
 };

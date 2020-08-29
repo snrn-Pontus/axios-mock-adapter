@@ -1,9 +1,9 @@
-var axios = require('axios');
-var expect = require('chai').expect;
+var axios = require("axios");
+var expect = require("chai").expect;
 
-var MockAdapter = require('../src');
+var MockAdapter = require("../src");
 
-describe('requestAborted spec', function () {
+describe("requestAborted spec", function () {
   var instance;
   var mock;
 
@@ -16,31 +16,31 @@ describe('requestAborted spec', function () {
     mock.restore();
   });
 
-  it('mocks requestAborted response', function () {
-    mock.onGet('/foo').abortRequest();
+  it("mocks requestAborted response", function () {
+    mock.onGet("/foo").abortRequest();
 
-    return instance.get('/foo').then(
+    return instance.get("/foo").then(
       function () {
-        expect.fail('should not be called');
+        expect.fail("should not be called");
       },
       function (error) {
         expect(error.config).to.exist;
-        expect(error.code).to.equal('ECONNABORTED');
-        expect(error.message).to.equal('Request aborted');
+        expect(error.code).to.equal("ECONNABORTED");
+        expect(error.message).to.equal("Request aborted");
         expect(error.isAxiosError).to.be.true;
       }
     );
   });
 
-  it('can abort a request only once', function () {
-    mock.onGet('/foo').abortRequestOnce().onGet('/foo').reply(200);
+  it("can abort a request only once", function () {
+    mock.onGet("/foo").abortRequestOnce().onGet("/foo").reply(200);
 
     return instance
-      .get('/foo')
+      .get("/foo")
       .then(
         function () {},
         function () {
-          return instance.get('/foo');
+          return instance.get("/foo");
         }
       )
       .then(function (response) {

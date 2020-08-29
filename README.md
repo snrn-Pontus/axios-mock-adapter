@@ -1,8 +1,10 @@
-# axios-mock-adapter
+# axios-mock-adapter-path-params
 
-[![Build Status](https://travis-ci.org/ctimmerm/axios-mock-adapter.svg?branch=master)](https://travis-ci.org/ctimmerm/axios-mock-adapter)
-[![dependencies Status](https://david-dm.org/ctimmerm/axios-mock-adapter/status.svg)](https://david-dm.org/ctimmerm/axios-mock-adapter)
-[![devDependency Status](https://david-dm.org/ctimmerm/axios-mock-adapter/dev-status.svg)](https://david-dm.org/ctimmerm/axios-mock-adapter#info=devDependencies)
+Forked from [ctimmerm's](https://github.com/ctimmerm) package [axios-mock-adapter](https://github.com/ctimmerm/axios-mock-adapter) with [kierate's](https://github.com/kierate) [pull request](https://github.com/ctimmerm/axios-mock-adapter/pull/205) merged into it.
+
+[![Build Status](https://travis-ci.org/snrn-Pontus/axios-mock-adapter.svg?branch=master)](https://travis-ci.org/snrn-Pontus/axios-mock-adapter)
+[![dependencies Status](https://david-dm.org/snrn-Pontus/axios-mock-adapter/status.svg)](https://david-dm.org/snrn-Pontus/axios-mock-adapter)
+[![devDependency Status](https://david-dm.org/snrn-Pontus/axios-mock-adapter/dev-status.svg)](https://david-dm.org/snrn-Pontus/axios-mock-adapter#info=devDependencies)
 
 Axios adapter that allows to easily mock requests
 
@@ -10,14 +12,13 @@ Axios adapter that allows to easily mock requests
 
 Using npm:
 
-`$ npm install axios-mock-adapter --save-dev`
+`$ npm install axios-mock-adapter-path-params --save-dev`
 
-It's also available as a UMD build:
+Using yarn:
 
-- https://unpkg.com/axios-mock-adapter/dist/axios-mock-adapter.js
-- https://unpkg.com/axios-mock-adapter/dist/axios-mock-adapter.min.js
+`$ yarn add axios-mock-adapter-path-params`
 
-axios-mock-adapter works on Node as well as in a browser, it works with axios v0.9.0 and above.
+axios-mock-adapter-path-params works on Node as well as in a browser, it works with axios v0.9.0 and above.
 
 ## Example
 
@@ -25,7 +26,7 @@ Mocking a `GET` request
 
 ```js
 var axios = require("axios");
-var MockAdapter = require("axios-mock-adapter");
+var MockAdapter = require("axios-mock-adapter-path-params");
 
 // This sets the mock adapter on the default instance
 var mock = new MockAdapter(axios);
@@ -45,7 +46,7 @@ Mocking a `GET` request with specific parameters
 
 ```js
 var axios = require("axios");
-var MockAdapter = require("axios-mock-adapter");
+var MockAdapter = require("axios-mock-adapter-path-params");
 
 // This sets the mock adapter on the default instance
 var mock = new MockAdapter(axios);
@@ -158,44 +159,43 @@ Using route params (colon notation)
 
 ```js
 const routeParams = {
-  ':userId': '[0-9]{1,8}',
-  ':filter': 'active|inactive|all',
-}
+  ":userId": "[0-9]{1,8}",
+  ":filter": "active|inactive|all",
+};
 const mock = new MockAdapter(axios, {}, routeParams);
 
-mock.onGet('/users/:userId/posts/:filter').reply(function(config) {
+mock.onGet("/users/:userId/posts/:filter").reply(function (config) {
   const { userId, filter } = config.routeParams;
-  
+
   // userId === '123'
   // filter === 'active'
 
   return [200, {}];
 });
 
-axios.get('/users/123/posts/active');
+axios.get("/users/123/posts/active");
 ```
 
 Using route params (curly braces notation)
 
 ```js
 const routeParams = {
-  '{uuid}': '[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}',
-  '{page}': '\\d?',
-}
+  "{uuid}": "[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}",
+  "{page}": "\\d?",
+};
 const mock = new MockAdapter(axios, {}, routeParams);
 
-mock.onGet('/users/{uuid}/posts/{page}').reply(function(config) {
+mock.onGet("/users/{uuid}/posts/{page}").reply(function (config) {
   const { uuid, page } = config.routeParams;
-  
+
   // uuid === 'b67c0749-656c-4beb-9cd9-17e274a648d9'
   // page === '3'
 
   return [200, {}];
 });
 
-axios.get('/users/b67c0749-656c-4beb-9cd9-17e274a648d9/posts/3');
+axios.get("/users/b67c0749-656c-4beb-9cd9-17e274a648d9/posts/3");
 ```
-
 
 Specify no path to match by verb alone
 
@@ -338,7 +338,7 @@ axios.get("/unexistent-path");
 
 // Exception message on console:
 //
-// Could not find mock for: 
+// Could not find mock for:
 // {
 //   "method": "get",
 //   "url": "http://localhost/unexistent-path"

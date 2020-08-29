@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "lib": [
-      "es6"
-    ],
+    "lib": ["es6"],
     "noEmit": true,
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": true,
@@ -11,9 +9,7 @@
     "strictNullChecks": true,
     "baseUrl": ".",
     "paths": {
-      "axios-mock-adapter": [
-        "."
-      ]
+      "axios-mock-adapter": ["."]
     }
   }
 }

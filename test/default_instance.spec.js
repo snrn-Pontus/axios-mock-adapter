@@ -1,9 +1,9 @@
-var axios = require('axios');
-var expect = require('chai').expect;
+var axios = require("axios");
+var expect = require("chai").expect;
 
-var MockAdapter = require('../src');
+var MockAdapter = require("../src");
 
-describe('MockAdapter on default axios instance', function () {
+describe("MockAdapter on default axios instance", function () {
   var mock;
 
   beforeEach(function () {
@@ -14,10 +14,10 @@ describe('MockAdapter on default axios instance', function () {
     mock.restore();
   });
 
-  it('mocks requests on the default instance', function () {
-    mock.onGet('/foo').reply(200);
+  it("mocks requests on the default instance", function () {
+    mock.onGet("/foo").reply(200);
 
-    return axios.get('/foo').then(function (response) {
+    return axios.get("/foo").then(function (response) {
       expect(response.status).to.equal(200);
     });
   });

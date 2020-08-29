@@ -1,6 +1,4 @@
-import { AxiosAdapter, AxiosInstance, AxiosRequestConfig } from 'axios';
-
-
+import { AxiosAdapter, AxiosInstance, AxiosRequestConfig } from "axios";
 
 type CallbackResponseSpecFunc = (
   config: AxiosRequestConfig
@@ -26,7 +24,7 @@ export interface RequestHandler {
 
 interface MockAdapterOptions {
   delayResponse?: number;
-  onNoMatch?: 'passthrough';
+  onNoMatch?: "passthrough";
 }
 
 interface RequestDataMatcher {
@@ -39,7 +37,7 @@ interface RequestDataMatcher {
 interface HeadersMatcher {
   [header: string]: string;
 }
-interface RouteParams {
+export interface RouteParams {
   [param: string]: string;
 }
 
@@ -50,7 +48,11 @@ type RequestMatcherFunc = (
 ) => RequestHandler;
 
 declare class MockAdapter {
-  constructor(axiosInstance: AxiosInstance, options?: MockAdapterOptions, routeParams?:RouteParams);
+  constructor(
+    axiosInstance: AxiosInstance,
+    options?: MockAdapterOptions,
+    routeParams?: RouteParams
+  );
 
   adapter(): AxiosAdapter;
   reset(): void;

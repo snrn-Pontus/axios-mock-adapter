@@ -1,5 +1,5 @@
-import axios from 'axios';
-import MockAdapter, { RequestHandler } from 'axios-mock-adapter';
+import axios from "axios";
+import MockAdapter, { RequestHandler, RouteParams } from "axios-mock-adapter";
 
 const instance = axios.create();
 const mock = new MockAdapter(instance);
@@ -11,7 +11,7 @@ namespace AllowsConstructing {
 namespace AllowsConstructingWithOptions {
   new MockAdapter(instance, {
     delayResponse: 2000,
-    onNoMatch: 'passthrough'
+    onNoMatch: "passthrough",
   });
 }
 
@@ -54,7 +54,7 @@ namespace AllowsVerbOnlyMatcher {
 }
 
 namespace AllowsUrlMatcher {
-  mock.onGet('/foo');
+  mock.onGet("/foo");
 }
 
 namespace AllowsUrlRegExpMatcher {
@@ -62,21 +62,21 @@ namespace AllowsUrlRegExpMatcher {
 }
 
 namespace AllowsStringBodyMatcher {
-  mock.onPatch('/foo', 'bar');
+  mock.onPatch("/foo", "bar");
 }
 
 namespace AllowsBodyMatcher {
-  mock.onGet('/foo', {
+  mock.onGet("/foo", {
     id: 4,
-    name: 'foo'
+    name: "foo",
   });
 }
 
 namespace AllowsParameterMatcher {
-  mock.onGet('/foo', {
+  mock.onGet("/foo", {
     params: {
-      searchText: 'John'
-    }
+      searchText: "John",
+    },
   });
 }
 
@@ -117,30 +117,31 @@ namespace SupportsNetworkErrorOnce {
 }
 
 namespace AllowsFunctionReply {
-  mock.onGet().reply(config => {
-    return [200, { data: 'foo' }, { RequestedURL: config.url }];
+  mock.onGet().reply((config) => {
+    return [200, { data: "foo" }, { RequestedURL: config.url }];
   });
 }
 
 namespace AllowsPromiseReply {
-  mock.onGet().reply(config => {
+  mock.onGet().reply((config) => {
     return Promise.resolve([
       200,
-      { data: 'bar' },
-      { RequestedURL: config.url }
+      { data: "bar" },
+      { RequestedURL: config.url },
     ]);
   });
 }
 
 namespace SupportsChaining {
-  mock
-    .onGet('/users')
-    .reply(200, [])
-    .onGet('/posts')
-    .reply(200, []);
+  mock.onGet("/users").reply(200, []).onGet("/posts").reply(200, []);
 }
 
 namespace ExportsRequestHandlerInterface {
   const handler: RequestHandler = mock.onAny();
   handler.reply(200);
+}
+
+namespace ExportsRouteParams {
+  const routeParams: RouteParams = { "{user}": "tjorven" };
+  const user = routeParams["{user}"];
 }
